@@ -9,21 +9,28 @@
     let announce_header = $state("");
     let announce_body = $state("");
     let announce_upload = $state(false)
+    let icon_size = $state(256);
 
-    const handleFileChange = (e) => { 
-        file = e.target.files[0];
-        file_name = file.name;
-        console.log(file.size);
-        announce_upload = true;
-        if(file.size > 50000000){
-            announce("Big ol\' file", "That file is pretty big. It might take a hot minute to upload", 5000);
-        } else if(file.size > 500000000){
-            announce("Goodness gracious that\'s a huge file", "That file is pretty massive. You know what else is massive??? The amount of time it'll take to upload", 5000);
-        } else if (file.size > 1000000000){
-            announce("🚨 🚨 Big file alert 🚨 🚨", "That file is more than a GB. If you haven't zipped it already, please do so...", 5000);
-        } else {
-            announce_upload = false;
+
+    async function handleFileChange(e){ 
+        for(let f of e.target.files){
+            console.log(f);
+            file = f;
+            file_name = file.name;
+            console.log(file.size);
+            announce_upload = true;
+            if(file.size > 50000000){
+                announce("Big ol\' file", "That file is pretty big. It might take a hot minute to upload", 5000);
+            } else if(file.size > 500000000){
+                announce("Goodness gracious that\'s a huge file", "That file is pretty massive. You know what else is massive??? The amount of time it'll take to upload", 5000);
+            } else if (file.size > 1000000000){
+                announce("🚨 🚨 Big file alert 🚨 🚨", "That file is more than a GB. If you haven't zipped it already, please do so...", 5000);
+            } else {
+                announce_upload = false;
+            }
+            await upload();
         }
+
     };
     let file_list = $state([]);
 
@@ -33,8 +40,14 @@
     }
 
     const get_thumbnail = (index) => {
-        const url = pb.files.getURL(file_list[index], file_list[index].data, { 'thumb': '256x256'} );
-        return url
+        let extensions = file_list[index].name.split(".");
+        let extension = extensions[extensions.length - 1];
+        if(extension == "png" || extension == "jpg" || extension == "jpeg" || extension == "gif" || extension == "webp"){
+            console.log("returning thumb")
+            return pb.files.getURL(file_list[index], file_list[index].data, { 'thumb': '256x256'} );
+        } else {
+           return "null"; 
+        }
     }
 
     const toggle_visibility = () => {
@@ -61,22 +74,12 @@
                 "data": file
             }
 
-            if(announce_upload){
-                announce_body = "Please don't turn your computer off";
-                announce_header = "Uploading file. Sit tight";
-                visibility = "";
-            }
-
-
             const upload = await pb.collection('Files').create(data);
             if(upload){
                 console.log("File Uploaded");
             }
             file = null;
             file_name = "None";
-            if(announce_upload){
-                visibility = "hidden";
-            }
         } catch (err) {
             if(err instanceof ClientResponseError){
                 if (err.status == 400){
@@ -128,24 +131,46 @@
 
 <input
     type="file"
+    multiple="multiple"
     onchange={handleFileChange}
     id="uploadButton"
     style="visibility: hidden;"
 >
+
 <div class="container">
     {#if file_list.length != 0}
-        {#each file_list as file, index}
-            <div class="itemContainer">
-                <a href="{download(index)}">
-                    <label for="download{index}" class="inputArea">
-                        <img src="{get_thumbnail(index)}" class="thumbnailImage" alt="thumbnail"/>
+        {#if icon_size >= 64}
+            {#each file_list as file, index}
+                <div class="itemContainer">
+                    <div class="imageContainer">
+                        {#if get_thumbnail(index) != "null"}
+                        <img src="{get_thumbnail(index)}" class="thumbnailImage" style="width: {icon_size}px;" alt="thumbnail"/>
+                        {:else}
+                        <img src="src\assets\icons8-file-250.png" class="thumbnailImage" style="width: {icon_size}px;" alt="thumbnail" />
+                        {/if}
                         {file.name}
-                    </label>               
-                </a>
-                <button onclick={() => delete_file(index)}>Delete</button>
-            </div>
-        
-        {/each}
+                    </div>
+                    <div class="controlContainer">
+                        <button onclick={() => {window.location.href=download(index)}} class="iconButton">⇣</button>
+                        <button class="iconButton" onclick={() => delete_file(index)}>✕</button>   
+                    </div>
+                </div>
+            
+            {/each}
+        {:else}
+            {#each file_list as file, index}
+                <div class="itemContainer" style="flex-direction: row; padding: 10px; width: 100%;">
+                    <div class="imageContainer" style="width: 70%;">
+                        {file.name}
+                    </div>
+                    <div class="controlContainer" style="width: 30%;">
+                        <button onclick={() => {window.location.href=download(index)}} class="iconButton">⇣</button>
+                        <button class="iconButton" onclick={() => delete_file(index)}>✕</button>   
+                    </div>
+                </div>
+            
+            {/each}
+        {/if}
     {:else}
         <h1>No files here</h1>
     {/if}
@@ -156,17 +181,56 @@
 </div>
 
 <span class="controlBar">
-
-    {#if file == null}
-        <label class="inputArea" for="uploadButton">Select File</label>
-    {:else}
-        <label class="inputArea" for="uploadButton">{file_name}</label>
-    {/if}
-    <button class="inputArea" onclick={upload}>Upload</button>
-
+    <label class="inputArea" for="uploadButton">⇪ Upload</label>
+    <input
+        type="range"
+        bind:value={icon_size}
+        min=0
+        max=256
+        step=64
+    >
 </span>
 
 <style>
+
+    .controlContainer {
+        justify-content: center;
+        width: 100%;
+        box-sizing: border-box;
+        align-items: center;
+        flex-direction: row;
+        display: flex;
+        gap: 10px;
+        padding-left: 1em;
+        padding-right: 1em;
+    }
+
+    .iconButton {
+        justify-content: center;
+        font-size: 32px;
+        align-items: center;
+        display: flex;
+        box-sizing: border-box;
+        color: var(--main-color);
+        background: transparent;
+        padding: 0xp;
+        transition:
+            color 250ms ease
+        ;
+    }
+
+    button:hover {
+        color: white;
+    }
+
+    .imageContainer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 5px;
+        padding: 1em;
+    }
 
     .container {
         width: 100%;
@@ -198,14 +262,18 @@
 
     a {
         color: white;
+        width: 100%;
     }
 
     .itemContainer {
         display: flex;
         flex-direction: column;
-        gap: 5px;
+        gap: 10px;
+        background: #2f2f2f;
+        padding-bottom: 2em;
+        border-radius: 24px;
     }
-    
+
     span {
         display: flex;
         width: 100%;
@@ -219,27 +287,37 @@
     }
 
     .thumbnailImage {
-        width: 50%;
+        border-radius: 10px;
     }
 
     .inputArea {
-        width: 100%;
         display: flex;
+        width: 100%;
+        height: 100%;
         padding: 1em;
         box-sizing: border-box;
         font-size: 24px;
+        border-radius: 24px;
         background-color: #1a1a1a;
-        border-radius: 4px;
         justify-content: center;
         align-items: center;
         outline: none;
+        color: var(--main-color);
         flex-direction: column;
+        border: 1px solid transparent;
+        transition:
+            outline 100ms ease,
+            color 250ms ease
+        ;
+    }
+
+    .inputArea:hover {
+        color: white;
     }
 
     button {
         width: 100%;
         display: flex;
-        padding: 1em;
         box-sizing: border-box;
         font-size: 16px;
         background-color: #1a1a1a;
@@ -248,14 +326,8 @@
         align-items: center;
         outline: none;
         flex-direction: column;
-    }
-
-    button:hover {
-        outline: 2px solid var(--main-color);
-    }
-
-    .inputArea:hover {
-        outline: 2px solid var(--main-color);
+        border: 1px solid transparent;
+        color: var(--main-color);
     }
 
     .notification {
