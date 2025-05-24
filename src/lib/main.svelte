@@ -2,7 +2,8 @@
     import { pb } from '../pocketbase.svelte'
     import { ClientResponseError } from 'pocketbase';
     import { onMount, onDestroy } from "svelte";
-    
+    import QRCode from 'qrcode';
+
     let file = $state(null);
     let file_name = $state("None");
     let visibility = $state("hidden");
@@ -10,7 +11,9 @@
     let announce_body = $state("");
     let announce_upload = $state(false)
     let icon_size = $state(256);
-
+    let qrcode_url = $state("");
+    let qr_vis = $state("hidden");
+    let readable_url = $state("")
 
     async function handleFileChange(e){ 
         for(let f of e.target.files){
@@ -96,10 +99,10 @@
     let unsubscribe: () => void;
     onMount(async () => {
         console.log("mounting and subscribing");
-        const response = await pb.collection("Files").getList(1, 25, {
+        const response = await pb.collection("Files").getFullList({
             sort: '-created',
         });
-        file_list = response.items;
+        file_list = response;
         unsubscribe = await pb
             .collection('Files')
             .subscribe("*", async ({ action, record }) => {
@@ -119,6 +122,26 @@
         file_list.splice(index, 1);
     }
 
+    const createCode = (index) => {
+        console.log("BLAHHH");
+        let data = "";
+        readable_url = download(index);
+        const image = QRCode.toDataURL(readable_url, { errorCorrectionLevel: 'L' }, function (err, url) {
+            data = url;
+        });
+
+        const bytes = atob(data.split(',')[1]);
+        const byteArray1 = [];
+        for (let i = 0; i < bytes.length; i++) {
+            const byte = bytes.charCodeAt(i);
+            byteArray1.push(byte);
+        }
+        const byteArray = new Uint8Array(byteArray1);
+        const blob = new Blob([byteArray], { type: "image/png" });
+        qrcode_url = URL.createObjectURL(blob);
+        qr_vis = "";
+    }
+
 </script>
 
 <div class="notification {visibility}">
@@ -131,7 +154,7 @@
 
 <input
     type="file"
-    multiple="multiple"
+    multiple
     onchange={handleFileChange}
     id="uploadButton"
     style="visibility: hidden;"
@@ -151,6 +174,7 @@
                         {file.name}
                     </div>
                     <div class="controlContainer">
+                        <button onclick={() => createCode(index)} class="iconButton">🗘</button>
                         <button onclick={() => {window.location.href=download(index)}} class="iconButton">⇣</button>
                         <button class="iconButton" onclick={() => delete_file(index)}>✕</button>   
                     </div>
@@ -164,6 +188,7 @@
                         {file.name}
                     </div>
                     <div class="controlContainer" style="width: 30%;">
+                        <button onclick={() => createCode(index)} class="iconButton">🗘</button>
                         <button onclick={() => {window.location.href=download(index)}} class="iconButton">⇣</button>
                         <button class="iconButton" onclick={() => delete_file(index)}>✕</button>   
                     </div>
@@ -191,7 +216,87 @@
     >
 </span>
 
+<div class="blocker {qr_vis}"></div>
+<div class="announcer {qr_vis}">
+    <span style="width: 100%; height: 100%;">
+        <span class="inputArea" style="width: 75%">
+            <textarea
+            
+                bind:value={readable_url}
+                readonly
+            
+            ></textarea>
+        </span>
+
+        <button class="iconButton" onclick={() => {qr_vis = 'hidden'}} style="width: 25%; height: 100%; background-color: #1a1a1a; border-radius: 24px;">X</button>
+    </span>
+
+
+    <img src="{qrcode_url}" alt="QRCode">
+</div>
+
 <style>
+
+    .announcer.hidden {
+        transform: translateY(-100vh);
+        opacity: 0;
+    }
+
+    .announcer {
+        width: 80%;
+        height: 80%;
+        position: fixed;
+        left: 10%;
+        top: 10%;
+        background-color: var(--main-color);
+        border-radius: 24px;
+        opacity: 1;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        align-items: center;
+        justify-content: center;
+        padding: 1em;
+        gap: 20px;
+        transition:
+            transform 1s ease,
+            opacity 1s ease
+        ;
+        z-index: 100;
+    }
+
+    .announcer img {
+        width: 75%;
+        border-radius: 10px;
+    }
+
+    textarea {
+        width: 100%;
+        height: 100%;
+        resize: none;
+        background-color: #1a1a1a;
+        border: none;
+        font-size: 24px;
+    }
+
+    .blocker {
+        width: 100%;
+        height: 100%;
+        position: fixed;
+        left: 0%;
+        top: 0%;
+        background-color: black;
+        opacity: .8;
+        z-index: 99;
+        transition:
+            opacity 1s ease
+        ;
+    }
+
+    .blocker.hidden {
+        scale: 0;
+        opacity: 0;
+    }
 
     .controlContainer {
         justify-content: center;
@@ -258,11 +363,6 @@
         width: 100vw;
         height: 12vh;
 
-    }
-
-    a {
-        color: white;
-        width: 100%;
     }
 
     .itemContainer {

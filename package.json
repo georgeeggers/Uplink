@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "pocketbase": "^0.26.0",
+    "qrcode": "^1.5.4",
     "svelte-spa-router": "^4.0.1"
   }
 }
