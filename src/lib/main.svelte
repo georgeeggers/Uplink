@@ -174,9 +174,9 @@
                         {file.name}
                     </div>
                     <div class="controlContainer">
-                        <button onclick={() => createCode(index)} class="iconButton">🗘</button>
-                        <button onclick={() => {window.location.href=download(index)}} class="iconButton">⇣</button>
-                        <button class="iconButton" onclick={() => delete_file(index)}>✕</button>   
+                        <button onclick={() => createCode(index)} class="iconButton icon">N</button>
+                        <button onclick={() => {window.location.href=download(index)}} class="iconButton icon">|</button>
+                        <button class="iconButton icon" onclick={() => delete_file(index)}>U</button>   
                     </div>
                 </div>
             
@@ -188,9 +188,9 @@
                         {file.name}
                     </div>
                     <div class="controlContainer" style="width: 30%;">
-                        <button onclick={() => createCode(index)} class="iconButton">🗘</button>
-                        <button onclick={() => {window.location.href=download(index)}} class="iconButton">⇣</button>
-                        <button class="iconButton" onclick={() => delete_file(index)}>✕</button>   
+                        <button onclick={() => createCode(index)} class="iconButton icon">N</button>
+                        <button onclick={() => {window.location.href=download(index)}} class="iconButton icon">|</button>
+                        <button class="iconButton icon" onclick={() => delete_file(index)}>U</button>   
                     </div>
                 </div>
             
@@ -206,7 +206,7 @@
 </div>
 
 <span class="controlBar">
-    <label class="inputArea" for="uploadButton">⇪ Upload</label>
+    <label class="inputArea" style="flex-direction: row;" for="uploadButton"><i class="icon">^</i> Upload</label>
     <input
         type="range"
         bind:value={icon_size}
@@ -216,10 +216,10 @@
     >
 </span>
 
-<div class="blocker {qr_vis}"></div>
+<label for="close" class="blocker {qr_vis}"></label>
 <div class="announcer {qr_vis}">
-    <span style="width: 100%; height: 100%;">
-        <span class="inputArea" style="width: 75%">
+    <span style="width: 100%; height: 20%;">
+        <span class="inputArea" style="width: 100%; height: 100%;">
             <textarea
             
                 bind:value={readable_url}
@@ -228,18 +228,32 @@
             ></textarea>
         </span>
 
-        <button class="iconButton" onclick={() => {qr_vis = 'hidden'}} style="width: 25%; height: 100%; background-color: #1a1a1a; border-radius: 24px;">X</button>
+        <button id="close" onclick={() => {qr_vis = 'hidden'}} style="visibility: hidden; position: fixed;">X</button>
     </span>
 
 
-    <img src="{qrcode_url}" alt="QRCode">
+    <img src="{qrcode_url}" alt="QRCode" class="qr">
 </div>
 
 <style>
 
+    @font-face {
+        font-family: "icon";
+        src: url('byom_icons/Byom-Icons-Trial.ttf');
+    }
+
     .announcer.hidden {
         transform: translateY(-100vh);
         opacity: 0;
+    }
+
+    .qr {
+        max-width: min(60vw, 60vh);
+        display: flex;
+    }
+
+    .icon {
+        font-family: "icon";
     }
 
     .announcer {
@@ -277,6 +291,7 @@
         background-color: #1a1a1a;
         border: none;
         font-size: 24px;
+        scrollbar-width: 10px;
     }
 
     .blocker {
@@ -312,7 +327,7 @@
 
     .iconButton {
         justify-content: center;
-        font-size: 32px;
+        font-size: 28px;
         align-items: center;
         display: flex;
         box-sizing: border-box;
