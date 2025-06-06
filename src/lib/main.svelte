@@ -10,10 +10,11 @@
     let announce_header = $state("");
     let announce_body = $state("");
     let announce_upload = $state(false)
-    let icon_size = $state(256);
+    let icon_size = $state(128);
     let qrcode_url = $state("");
     let qr_vis = $state("hidden");
     let readable_url = $state("")
+    let settings_visibility = $state("hidden");
 
     async function handleFileChange(e){ 
         for(let f of e.target.files){
@@ -205,8 +206,12 @@
 
 </div>
 
-<span class="controlBar">
-    <label class="inputArea" style="flex-direction: row;" for="uploadButton"><i class="icon">^</i> Upload</label>
+<label for="closeSettings" class="blocker {settings_visibility}"></label>
+<button id="closeSettings" style="visibility: hidden; position: fixed;" onclick={() => {
+    settings_visibility = "hidden";
+}}>X</button>
+<div class="announcer {settings_visibility}">
+    <p1>Icon size</p1>
     <input
         type="range"
         bind:value={icon_size}
@@ -214,11 +219,42 @@
         max=256
         step=64
     >
+    {#if icon_size >= 64}
+            <div class="itemContainer">
+                <div class="imageContainer">
+
+                    <img src="src\assets\icons8-file-250.png" class="thumbnailImage" style="width: {icon_size}px;" alt="thumbnail" />
+                    Example
+                </div>
+                <div class="controlContainer">
+                    <button class="iconButton icon">N</button>
+                    <button class="iconButton icon">|</button>
+                    <button class="iconButton icon">U</button>   
+                </div>
+            </div>
+    {:else}
+        <div class="itemContainer" style="flex-direction: row; padding: 10px; width: 100%;">
+            <div class="imageContainer" style="width: 70%;">
+                Example
+            </div>
+            <div class="controlContainer" style="width: 30%;">
+                <button class="iconButton icon">N</button>
+                <button class="iconButton icon">|</button>
+                <button class="iconButton icon">U</button>   
+            </div>
+        </div>
+    {/if}
+</div>
+
+<span class="controlBar">
+    <label class="inputArea" style="flex-direction: row;" for="uploadButton"><i class="icon">^</i> Upload</label>
+    <button class="iconButton icon" style="width: 10%; height: 100%; background-color: #1a1a1a; border-radius: 20px;" onclick={() => {
+        settings_visibility = "";
+    }}>_</button>
 </span>
 
 <label for="close" class="blocker {qr_vis}"></label>
 <div class="announcer {qr_vis}">
-    <span style="width: 100%; height: 20%;">
         <span class="inputArea" style="width: 100%; height: 100%;">
             <textarea
             
@@ -229,7 +265,6 @@
         </span>
 
         <button id="close" onclick={() => {qr_vis = 'hidden'}} style="visibility: hidden; position: fixed;">X</button>
-    </span>
 
 
     <img src="{qrcode_url}" alt="QRCode" class="qr">
@@ -260,16 +295,17 @@
         width: 80%;
         height: 80%;
         position: fixed;
+        justify-content: center;
         left: 10%;
         top: 10%;
-        background-color: var(--main-color);
+        border: 2px solid var(--main-color);
+        background-color: #1a1a1a;
         border-radius: 24px;
         opacity: 1;
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
         align-items: center;
-        justify-content: center;
         padding: 1em;
         gap: 20px;
         transition:
@@ -288,9 +324,14 @@
         width: 100%;
         height: 100%;
         resize: none;
-        background-color: #1a1a1a;
-        border: none;
+        background-color: #2f2f2f;
+        border: 2px solid var(--main-color);
+        padding: 10px;
+        box-sizing: border-box;
+        flex-direction: column;
+        display: flex;
         font-size: 24px;
+        border-radius: 10px;
         scrollbar-width: 10px;
     }
 
