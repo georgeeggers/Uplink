@@ -1,4 +1,4 @@
-import Main from "./lib/main.svelte"
+import Main from "./lib/uplink.svelte"
 export const routes = {
     "/": Main
 }

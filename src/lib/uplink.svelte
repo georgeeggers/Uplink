@@ -16,25 +16,32 @@
     let readable_url = $state("")
     let settings_visibility = $state("hidden");
 
-    async function handleFileChange(e){ 
-        for(let f of e.target.files){
-            console.log(f);
-            file = f;
-            file_name = file.name;
-            console.log(file.size);
-            announce_upload = true;
-            if(file.size > 50000000){
-                announce("Big ol\' file", "That file is pretty big. It might take a hot minute to upload", 5000);
-            } else if(file.size > 500000000){
-                announce("Goodness gracious that\'s a huge file", "That file is pretty massive. You know what else is massive??? The amount of time it'll take to upload", 5000);
-            } else if (file.size > 1000000000){
-                announce("🚨 🚨 Big file alert 🚨 🚨", "That file is more than a GB. If you haven't zipped it already, please do so...", 5000);
-            } else {
-                announce_upload = false;
-            }
-            await upload();
+    const handleFile = async (f) => {
+        file = f;
+        file_name = file.name;
+        announce_upload = true;
+        if(file.size > 50000000){
+            announce("Big ol\' file", "That file is pretty big. It might take a hot minute to upload", 5000);
+        } else if(file.size > 500000000){
+            announce("Goodness gracious that\'s a huge file", "That file is pretty massive. You know what else is massive??? The amount of time it'll take to upload", 5000);
+        } else if (file.size > 1000000000){
+            announce("🚨 🚨 Big file alert 🚨 🚨", "That file is more than a GB. If you haven't zipped it already, please do so...", 5000);
+        } else {
+            announce_upload = false;
         }
+        await upload();
+    }
 
+    async function handleFileChange(e){ 
+        if(e.type == "change"){
+            for(let f of e.target.files){
+                await handleFile(f);
+            }
+        } else if (e.type == "drop"){
+            for(let f of e.dataTransfer.files){
+                await handleFile(f);
+            }
+        }
     };
     let file_list = $state([]);
 
@@ -47,7 +54,6 @@
         let extensions = file_list[index].name.split(".");
         let extension = extensions[extensions.length - 1];
         if(extension == "png" || extension == "jpg" || extension == "jpeg" || extension == "gif" || extension == "webp"){
-            console.log("returning thumb")
             return pb.files.getURL(file_list[index], file_list[index].data, { 'thumb': '256x256'} );
         } else {
            return "null"; 
@@ -90,6 +96,7 @@
                     announce("Invalid File", "Failed to upload because of an invalid file. Select a different file, or try zipping it", 5000);
                 } else if (err.status == 0){
                     announce("Network Error", "Could not connect to the file server. Try again later", 5000);
+                    console.log(err);
                 }
             } else {
                 announce("Error", "Something went wrong. Try again later", 5000);
@@ -97,7 +104,7 @@
         }
     }
 
-    let unsubscribe: () => void;
+    let unsubscribe;
     onMount(async () => {
         console.log("mounting and subscribing");
         const response = await pb.collection("Files").getFullList({
@@ -108,10 +115,25 @@
             .collection('Files')
             .subscribe("*", async ({ action, record }) => {
                 if(action === "create"){
-                    console.log("jacsijfijoa");
                     file_list.push(record);
                 }
             });
+        
+        const dropArea = document.getElementById("uploadButton");
+
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            try {
+                handleFileChange(e);
+            } catch (Err) {
+                announce("Error", `${Err}`, 5000);
+            }
+        });
+        
     });
 
     onDestroy(() => {
@@ -124,7 +146,6 @@
     }
 
     const createCode = (index) => {
-        console.log("BLAHHH");
         let data = "";
         readable_url = download(index);
         const image = QRCode.toDataURL(readable_url, { errorCorrectionLevel: 'L' }, function (err, url) {
@@ -152,14 +173,6 @@
 
     <p1>{announce_body}</p1>
 </div>
-
-<input
-    type="file"
-    multiple
-    onchange={handleFileChange}
-    id="uploadButton"
-    style="visibility: hidden;"
->
 
 <div class="container">
     {#if file_list.length != 0}
@@ -246,8 +259,17 @@
     {/if}
 </div>
 
+<input
+    type="file"
+    multiple
+    onchange={handleFileChange}
+    id="uploadTrigger"
+    style="visibility: hidden;"
+>
+
+
 <span class="controlBar">
-    <label class="inputArea" style="flex-direction: row;" for="uploadButton"><i class="icon">^</i> Upload</label>
+    <label class="inputArea icon" style="flex-direction: row;" id='uploadButton' for="uploadTrigger">+</label>
     <button class="iconButton icon" style="width: 10%; height: 100%; background-color: #1a1a1a; border-radius: 20px;" onclick={() => {
         settings_visibility = "";
     }}>_</button>
@@ -368,7 +390,7 @@
 
     .iconButton {
         justify-content: center;
-        font-size: 28px;
+        font-size: 20px;
         align-items: center;
         display: flex;
         box-sizing: border-box;
@@ -527,5 +549,30 @@
         align-items: center;
         border-radius: 10px;
     }
+
+    @media (min-width: 600px) {
+        .iconButton {
+            font-size: 22px;
+        }
+    }
+
+    @media (min-width: 700px) {
+        .iconButton {
+            font-size: 24px;
+        }
+    }
+
+    @media (min-width: 800px) {
+        .iconButton {
+            font-size: 26px;
+        }
+    }
+
+    @media (min-width: 900px) {
+        .iconButton {
+            font-size: 28px;
+        }
+    }
+
 
 </style>
